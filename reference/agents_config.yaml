@@ -1,0 +1,143 @@
+# agents/config.yaml
+# Model-Agnostic Agent Configuration
+# Change only this file to swap models - NO CODE CHANGES NEEDED
+
+active_model_id: "gpt-4o"
+
+# All available models
+models:
+  gpt-4o:
+    provider: "openai"
+    api_key_env_var: "OPENAI_API_KEY"
+    tier: "budget"
+    description: "GPT-4 Omni - Excellent for general tasks, vision, code"
+    timeout_secs: 30
+    enabled: true
+  
+  gpt-4o-mini:
+    provider: "openai"
+    api_key_env_var: "OPENAI_API_KEY"
+    tier: "ultra_cheap"
+    description: "Fast, cheap variant of GPT-4o"
+    timeout_secs: 20
+    enabled: true
+  
+  claude-3-5-sonnet-20241022:
+    provider: "anthropic"
+    api_key_env_var: "ANTHROPIC_API_KEY"
+    tier: "budget"
+    description: "Claude 3.5 Sonnet - Excellent reasoning, 200k context"
+    timeout_secs: 30
+    enabled: true
+  
+  claude-3-haiku-20240307:
+    provider: "anthropic"
+    api_key_env_var: "ANTHROPIC_API_KEY"
+    tier: "ultra_cheap"
+    description: "Claude 3 Haiku - Fastest and cheapest"
+    timeout_secs: 15
+    enabled: true
+  
+  gemini-2.0-pro:
+    provider: "google"
+    api_key_env_var: "GOOGLE_API_KEY"
+    tier: "premium"
+    description: "Google Gemini 2.0 Pro - Huge context window (1M)"
+    timeout_secs: 45
+    enabled: true
+
+# Fallback chains - try models in order if primary fails
+fallback_chains:
+  general:
+    chain_id: "general"
+    models:
+      - "gpt-4o"
+      - "claude-3-5-sonnet-20241022"
+      - "gemini-2.0-pro"
+    description: "General purpose: primary -> backup -> tertiary"
+  
+  cost_optimized:
+    chain_id: "cost_optimized"
+    models:
+      - "gpt-4o-mini"
+      - "claude-3-haiku-20240307"
+      - "gpt-4o"  # Fallback to full model if cheap tier fails
+    description: "Cost-optimized: try cheap models first"
+  
+  vision:
+    chain_id: "vision"
+    models:
+      - "gpt-4o"
+      - "gemini-2.0-pro"
+      - "claude-3-5-sonnet-20241022"
+    description: "Vision tasks: all support vision"
+
+# Routing strategy
+routing_strategy: "cost_aware"  # or "fallback", "round_robin", "manual"
+
+# Cost management
+max_cost_per_request: 0.01      # $0.01 per request
+max_cost_per_day: 100.0         # $100 per day
+max_cost_per_month: 3000.0      # $3000 per month
+
+# System prompt (template to use)
+system_prompt_template: "reasoning"  # or "general", "code", "custom"
+
+# Task complexity to model mapping
+# This enables automatic model selection based on task type
+task_complexity_to_model:
+  trivial: "gpt-4o-mini"         # Tokenization, simple lookup
+  simple: "gpt-4o-mini"          # Q&A, short summarization
+  moderate: "gpt-4o"             # Analysis, extraction
+  complex: "claude-3-5-sonnet-20241022"  # Code generation, reasoning
+  expert: "gemini-2.0-pro"       # Novel problems, deep reasoning
+
+# Circuit breaker settings (per model)
+circuit_breaker:
+  failure_threshold: 5           # Open after 5 failures
+  recovery_timeout_secs: 60      # Try recovery after 60s
+  success_threshold: 2           # Close after 2 successes in HALF_OPEN
+
+# Retry policy for queued tasks
+retry_policy:
+  max_retries: 5
+  initial_backoff_secs: 60
+  max_backoff_secs: 3600
+  backoff_multiplier: 2.0
+
+# Provider-specific settings
+provider_configs:
+  openai:
+    request_timeout_secs: 30
+    organization_id: null
+  
+  anthropic:
+    request_timeout_secs: 30
+    version: "2024-06-01"
+  
+  google:
+    request_timeout_secs: 45
+    project_id: null
+
+# Logging and monitoring
+logging:
+  level: "INFO"
+  log_model_selection: true
+  log_cost_per_request: true
+  log_fallback_events: true
+
+# Feature flags
+features:
+  enable_streaming: true
+  enable_tool_calling: true
+  enable_vision: true
+  enable_structured_output: true
+  enable_cost_tracking: true
+  enable_circuit_breaker: true
+  enable_auto_fallback: true
+
+# Monitoring and alerting
+monitoring:
+  error_rate_threshold: 0.05     # Alert if >5% errors
+  latency_p95_threshold_ms: 5000 # Alert if P95 > 5s
+  enable_metrics_export: true
